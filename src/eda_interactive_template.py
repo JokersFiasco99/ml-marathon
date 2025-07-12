@@ -35,7 +35,7 @@ DATA_PATH = "data/intro_ml/house-prices/train.csv"
 df = pd.read_csv(DATA_PATH)
 
 print(f"📊 Dataset shape: {df.shape}")
-print(f"🎯 Target classes: {np.unique(df['target'])}")
+print(f"🏠 House prices dataset loaded successfully!")
 print("\n📋 First 5 rows:")
 df.head()
 
@@ -71,10 +71,13 @@ print(df.describe())
 duplicates = df.duplicated().sum()
 print(f"\n🔄 Duplicate rows: {duplicates}")
 
-# Check target distribution
-if 'target' in df.columns:
-    print("\n🎯 Target Distribution:")
-    print(df['target'].value_counts().sort_index())
+# Check target distribution (SalePrice for house prices)
+if 'SalePrice' in df.columns:
+    print("\n🎯 Target Distribution (SalePrice):")
+    print(f"Min: ${df['SalePrice'].min():,.0f}")
+    print(f"Max: ${df['SalePrice'].max():,.0f}")
+    print(f"Mean: ${df['SalePrice'].mean():,.0f}")
+    print(f"Median: ${df['SalePrice'].median():,.0f}")
 
 # %%
 # =============================================================================
@@ -83,7 +86,7 @@ if 'target' in df.columns:
 
 # Select numeric columns for visualization
 numeric_cols = df.select_dtypes(include=[np.number]).columns
-numeric_cols = [col for col in numeric_cols if col != 'target']
+numeric_cols = [col for col in numeric_cols if col != 'SalePrice']
 
 # Distribution plots
 fig, axes = plt.subplots(2, 2, figsize=(15, 10))
@@ -141,28 +144,27 @@ else:
 # 6. TARGET ANALYSIS (if applicable)
 # =============================================================================
 
-if 'target' in df.columns:
-    # Target distribution
+if 'SalePrice' in df.columns:
+    # Target distribution (SalePrice histogram)
     plt.figure(figsize=(12, 4))
     
     plt.subplot(1, 2, 1)
-    df['target'].value_counts().plot(kind='bar', color='lightcoral')
-    plt.title('Target Distribution')
-    plt.xlabel('Target Class')
-    plt.ylabel('Count')
-    plt.xticks(rotation=0)
+    df['SalePrice'].hist(bins=50, color='lightcoral', alpha=0.7)
+    plt.title('SalePrice Distribution')
+    plt.xlabel('Sale Price ($)')
+    plt.ylabel('Frequency')
     
     plt.subplot(1, 2, 2)
-    df['target'].value_counts().plot(kind='pie', autopct='%1.1f%%', colors=['lightcoral', 'lightblue', 'lightgreen'])
-    plt.title('Target Distribution (Percentage)')
-    plt.ylabel('')
+    df['SalePrice'].plot(kind='box', color='lightblue')
+    plt.title('SalePrice Box Plot')
+    plt.ylabel('Sale Price ($)')
     
     plt.tight_layout()
     plt.show()
     
     # Feature importance via target correlation
-    target_corr = df[numeric_cols].corrwith(df['target']).abs().sort_values(ascending=False)
-    print("\n🎯 Features most correlated with target:")
+    target_corr = df[numeric_cols].corrwith(df['SalePrice']).abs().sort_values(ascending=False)
+    print("\n🎯 Features most correlated with SalePrice:")
     print(target_corr.head(10))
 
 # %%
@@ -203,12 +205,19 @@ for col, count in sorted(outlier_counts.items(), key=lambda x: x[1], reverse=Tru
 
 # Pairplot for key features
 key_features = numeric_cols[:4]  # Take first 4 features
-if 'target' in df.columns:
-    sns.pairplot(df[key_features + ['target']], 
-                 hue='target', 
-                 diag_kind='hist',
-                 corner=True)
-    plt.suptitle('Feature Relationships by Target', y=1.02)
+if 'SalePrice' in df.columns:
+    # Create scatter plots with SalePrice
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+    axes = axes.ravel()
+    
+    for i, col in enumerate(key_features):
+        df.plot.scatter(x=col, y='SalePrice', ax=axes[i], alpha=0.6)
+        axes[i].set_title(f'{col} vs SalePrice')
+        axes[i].set_xlabel(col)
+        axes[i].set_ylabel('SalePrice')
+    
+    plt.tight_layout()
+    plt.show()
 else:
     sns.pairplot(df[key_features], 
                  diag_kind='hist',
@@ -262,12 +271,13 @@ if len(numeric_cols) >= 2:
 # 10. QUICK MODEL BASELINE
 # =============================================================================
 
-if 'target' in df.columns:
+if 'SalePrice' in df.columns:
     print("🤖 Quick Model Baseline")
     
-    # Prepare features
-    X = df[numeric_cols + ['feature_ratio']].fillna(0)
-    y = df['target']
+    # Prepare features (use numeric features only)
+    feature_cols = numeric_cols[:10]  # Take first 10 numeric features
+    X = df[feature_cols].fillna(df[feature_cols].median())
+    y = df['SalePrice']
     
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -277,15 +287,20 @@ if 'target' in df.columns:
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
-    # Train model
-    rf = RandomForestClassifier(random_state=42, n_estimators=100)
+    # Train model (use RandomForestRegressor for regression)
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.metrics import mean_absolute_error, r2_score
+    
+    rf = RandomForestRegressor(random_state=42, n_estimators=100)
     rf.fit(X_train_scaled, y_train)
     
     # Predictions
     y_pred = rf.predict(X_test_scaled)
-    accuracy = accuracy_score(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
     
-    print(f"🎯 Random Forest Accuracy: {accuracy:.3f}")
+    print(f"🎯 Random Forest MAE: ${mae:,.0f}")
+    print(f"🎯 Random Forest R²: {r2:.3f}")
     
     # Feature importance
     feature_importance = pd.DataFrame({
@@ -309,9 +324,9 @@ print(f"✅ Missing values: {df.isnull().sum().sum()}")
 print(f"✅ Duplicate rows: {df.duplicated().sum()}")
 print(f"✅ Numeric features: {len(numeric_cols)}")
 
-if 'target' in df.columns:
-    print(f"✅ Target classes: {len(df['target'].unique())}")
-    print(f"✅ Baseline accuracy: {accuracy:.3f}")
+if 'SalePrice' in df.columns:
+    print(f"✅ Target (SalePrice): ${df['SalePrice'].mean():,.0f} avg")
+    print(f"✅ Baseline R²: {r2:.3f}")
 
 print("\n🎯 Next Steps:")
 print("• Deep dive into interesting patterns")
