@@ -31,7 +31,7 @@ print(f"🐍 Python environment ready for EDA")
 # =============================================================================
 
 # Load house-prices dataset
-DATA_PATH = "data/intro_ml/house-prices/train.csv"
+DATA_PATH = "/Users/gilsozinho/workspace/ml-marathon/data/intro_ml/house-prices/train.csv"
 df = pd.read_csv(DATA_PATH)
 
 print(f"📊 Dataset shape: {df.shape}")
