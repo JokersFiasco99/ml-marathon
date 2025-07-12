@@ -30,14 +30,9 @@ print(f"🐍 Python environment ready for EDA")
 # 1. DATA LOADING & FIRST LOOK
 # =============================================================================
 
-# TODO: Update this path to your actual dataset
-DATA_PATH = "data/your_dataset.csv"
-
-# For testing, let's use a sample dataset
-from sklearn.datasets import load_wine
-wine_data = load_wine()
-df = pd.DataFrame(wine_data.data, columns=wine_data.feature_names)
-df['target'] = wine_data.target
+# Load house-prices dataset
+DATA_PATH = "data/intro_ml/house-prices/train.csv"
+df = pd.read_csv(DATA_PATH)
 
 print(f"📊 Dataset shape: {df.shape}")
 print(f"🎯 Target classes: {np.unique(df['target'])}")
@@ -70,7 +65,7 @@ else:
 # =============================================================================
 
 print("📊 Descriptive Statistics:")
-display(df.describe())
+print(df.describe())
 
 # Check for duplicates
 duplicates = df.duplicated().sum()
